@@ -1,43 +1,46 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { generateTOTP, formatCode, getRemainingSeconds } from "@/lib/totp";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { LinkIcon } from "lucide-react";
+import { CopyIcon, ArrowLeftIcon } from "lucide-react";
 
-export function QuickGenerator() {
-  const [secret, setSecret] = useState("");
+interface SharedGeneratorProps {
+  secret: string;
+}
+
+export function SharedGenerator({ secret }: SharedGeneratorProps) {
   const [code, setCode] = useState("");
   const [remaining, setRemaining] = useState(30);
-  const [isActive, setIsActive] = useState(false);
+  const [error, setError] = useState(false);
 
   const generate = useCallback(async () => {
-    if (!secret.trim()) return;
     try {
-      const otp = await generateTOTP(secret.trim());
+      const otp = await generateTOTP(secret);
       setCode(otp);
-      setIsActive(true);
+      setError(false);
     } catch {
-      toast.error("Неверный секрет (должен быть Base32)");
-      setIsActive(false);
+      setError(true);
       setCode("");
     }
   }, [secret]);
 
   useEffect(() => {
-    if (!isActive) return;
+    generate();
+  }, [generate]);
+
+  useEffect(() => {
+    if (error || !code) return;
 
     const interval = setInterval(async () => {
       const rem = getRemainingSeconds(30);
       setRemaining(rem);
       if (rem === 30) {
-        // Period flipped, regenerate
         try {
-          const otp = await generateTOTP(secret.trim());
+          const otp = await generateTOTP(secret);
           setCode(otp);
         } catch {
           /* ignore */
@@ -46,7 +49,7 @@ export function QuickGenerator() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isActive, secret]);
+  }, [error, code, secret]);
 
   const handleCopy = () => {
     if (code) {
@@ -55,33 +58,35 @@ export function QuickGenerator() {
     }
   };
 
-  const handleCopyLink = () => {
-    const url = `${window.location.origin}/generator/${encodeURIComponent(secret.trim())}`;
-    navigator.clipboard.writeText(url);
-    toast.success("Ссылка скопирована");
-  };
+  if (error) {
+    return (
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Ошибка</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Невалидный секрет. Убедитесь, что ссылка содержит корректный Base32
+            ключ.
+          </p>
+          <Link href="/generator">
+            <Button variant="outline" className="w-full">
+              <ArrowLeftIcon className="size-4" />
+              Открыть генератор
+            </Button>
+          </Link>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
-        <CardTitle>Быстрый TOTP генератор</CardTitle>
+        <CardTitle>TOTP код</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="totp-secret">Secret (Base32)</Label>
-          <Input
-            id="totp-secret"
-            placeholder="JBSWY3DPEHPK3PXP"
-            value={secret}
-            onChange={(e) => setSecret(e.target.value)}
-            className="font-mono"
-          />
-        </div>
-        <Button onClick={generate} className="w-full">
-          Генерировать
-        </Button>
-
-        {isActive && code && (
+        {code && (
           <div
             className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-border bg-card p-6"
             onClick={handleCopy}
@@ -101,16 +106,17 @@ export function QuickGenerator() {
           </div>
         )}
 
-        {isActive && code && (
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={handleCopyLink}
-          >
-            <LinkIcon className="size-4" />
-            Скопировать ссылку
+        <Button variant="outline" className="w-full" onClick={handleCopy}>
+          <CopyIcon className="size-4" />
+          Скопировать код
+        </Button>
+
+        <Link href="/generator">
+          <Button variant="ghost" className="w-full">
+            <ArrowLeftIcon className="size-4" />
+            Открыть генератор
           </Button>
-        )}
+        </Link>
       </CardContent>
     </Card>
   );
