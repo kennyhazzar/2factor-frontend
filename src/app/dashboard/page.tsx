@@ -49,7 +49,7 @@ export default function DashboardPage() {
   // Show nothing while checking auth
   if (authLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex flex-1 items-center justify-center">
         <Loader2Icon className="size-8 animate-spin text-primary" />
       </div>
     );
@@ -67,7 +67,7 @@ export default function DashboardPage() {
 
   // Authenticated and unlocked — show dashboard
   return (
-    <div className="mx-auto flex min-h-screen max-w-2xl flex-col gap-6 p-4 sm:p-6">
+    <div className="mx-auto flex flex-1 w-full max-w-2xl flex-col gap-6 p-4 sm:p-6">
       {/* Header */}
       <header className="flex items-center justify-between">
         <div>

@@ -7,7 +7,7 @@ export default function Home() {
   const { isAuthenticated, isLoading } = useAuth();
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-8 p-8">
+    <div className="flex flex-1 flex-col items-center justify-center gap-8 p-8">
       <div className="flex flex-col items-center gap-4 text-center">
         <h1 className="text-4xl font-bold tracking-tight">
           <span className="text-primary">2FA</span> Vault
