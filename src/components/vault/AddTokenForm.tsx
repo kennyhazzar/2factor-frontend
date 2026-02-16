@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { PlusIcon } from "lucide-react";
+import { useState, useCallback } from "react";
+import { PlusIcon, CameraIcon } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { QRScanner } from "@/components/vault/QRScanner";
 import { parseOtpAuthUri, base32Decode } from "@/lib/totp";
 import { toast } from "sonner";
 import type { TOTPToken } from "@/types/vault";
@@ -22,7 +23,7 @@ interface AddTokenFormProps {
   ) => Promise<void>;
 }
 
-type InputMode = "manual" | "uri";
+type InputMode = "manual" | "uri" | "scan";
 
 export function AddTokenForm({ onAdd }: AddTokenFormProps) {
   const [open, setOpen] = useState(false);
@@ -136,10 +137,55 @@ export function AddTokenForm({ onAdd }: AddTokenFormProps) {
     e.preventDefault();
     if (mode === "manual") {
       handleManualSubmit();
-    } else {
+    } else if (mode === "uri") {
       handleUriSubmit();
     }
   };
+
+  const handleQRScan = useCallback(
+    async (scannedUri: string) => {
+      let parsed;
+      try {
+        parsed = parseOtpAuthUri(scannedUri);
+      } catch {
+        toast.error("QR-код не содержит корректный otpauth:// URI");
+        return;
+      }
+
+      setIsSubmitting(true);
+      try {
+        await onAdd({
+          issuer: parsed.issuer,
+          account: parsed.account,
+          secret: parsed.secret,
+          algorithm: parsed.algorithm,
+          digits: parsed.digits,
+          period: parsed.period,
+        });
+        toast.success("Токен добавлен");
+        resetForm();
+        setOpen(false);
+      } catch (err: unknown) {
+        const message =
+          err instanceof Error ? err.message : "Ошибка добавления токена";
+        toast.error(message);
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [onAdd]
+  );
+
+  const handleQRError = useCallback((message: string) => {
+    toast.error(message);
+  }, []);
+
+  const tabClass = (tab: InputMode) =>
+    `flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+      mode === tab
+        ? "bg-background text-foreground shadow-sm"
+        : "text-muted-foreground hover:text-foreground"
+    }`;
 
   return (
     <Dialog
@@ -162,89 +208,81 @@ export function AddTokenForm({ onAdd }: AddTokenFormProps) {
 
         {/* Mode tabs */}
         <div className="flex gap-1 rounded-lg bg-muted p-1">
-          <button
-            type="button"
-            onClick={() => setMode("manual")}
-            className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-              mode === "manual"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
+          <button type="button" onClick={() => setMode("manual")} className={tabClass("manual")}>
             Ручной ввод
           </button>
-          <button
-            type="button"
-            onClick={() => setMode("uri")}
-            className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-              mode === "uri"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
+          <button type="button" onClick={() => setMode("uri")} className={tabClass("uri")}>
             URI
+          </button>
+          <button type="button" onClick={() => setMode("scan")} className={tabClass("scan")}>
+            <CameraIcon className="mr-1.5 inline-block size-4" />
+            QR
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {mode === "manual" ? (
-            <>
+        {mode === "scan" ? (
+          <QRScanner onScan={handleQRScan} onError={handleQRError} />
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {mode === "manual" ? (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="issuer">Сервис *</Label>
+                  <Input
+                    id="issuer"
+                    type="text"
+                    placeholder="Google, GitHub, etc."
+                    value={issuer}
+                    onChange={(e) => setIssuer(e.target.value)}
+                    required
+                    disabled={isSubmitting}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="account">Аккаунт</Label>
+                  <Input
+                    id="account"
+                    type="text"
+                    placeholder="user@example.com"
+                    value={account}
+                    onChange={(e) => setAccount(e.target.value)}
+                    disabled={isSubmitting}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="secret">Секретный ключ (Base32) *</Label>
+                  <Input
+                    id="secret"
+                    type="text"
+                    placeholder="JBSWY3DPEHPK3PXP"
+                    value={secret}
+                    onChange={(e) => setSecret(e.target.value)}
+                    required
+                    disabled={isSubmitting}
+                    className="font-code tracking-wider"
+                  />
+                </div>
+              </>
+            ) : (
               <div className="space-y-2">
-                <Label htmlFor="issuer">Сервис *</Label>
-                <Input
-                  id="issuer"
-                  type="text"
-                  placeholder="Google, GitHub, etc."
-                  value={issuer}
-                  onChange={(e) => setIssuer(e.target.value)}
-                  required
+                <Label htmlFor="uri">otpauth:// URI</Label>
+                <textarea
+                  id="uri"
+                  placeholder="otpauth://totp/Issuer:user@example.com?secret=JBSWY3DPEHPK3PXP&issuer=Issuer"
+                  value={uri}
+                  onChange={(e) => setUri(e.target.value)}
                   disabled={isSubmitting}
+                  rows={3}
+                  className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex w-full rounded-md border px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="account">Аккаунт</Label>
-                <Input
-                  id="account"
-                  type="text"
-                  placeholder="user@example.com"
-                  value={account}
-                  onChange={(e) => setAccount(e.target.value)}
-                  disabled={isSubmitting}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="secret">Секретный ключ (Base32) *</Label>
-                <Input
-                  id="secret"
-                  type="text"
-                  placeholder="JBSWY3DPEHPK3PXP"
-                  value={secret}
-                  onChange={(e) => setSecret(e.target.value)}
-                  required
-                  disabled={isSubmitting}
-                  className="font-code tracking-wider"
-                />
-              </div>
-            </>
-          ) : (
-            <div className="space-y-2">
-              <Label htmlFor="uri">otpauth:// URI</Label>
-              <textarea
-                id="uri"
-                placeholder="otpauth://totp/Issuer:user@example.com?secret=JBSWY3DPEHPK3PXP&issuer=Issuer"
-                value={uri}
-                onChange={(e) => setUri(e.target.value)}
-                disabled={isSubmitting}
-                rows={3}
-                className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex w-full rounded-md border px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              />
-            </div>
-          )}
+            )}
 
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? "Добавление..." : "Добавить"}
-          </Button>
-        </form>
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? "Добавление..." : "Добавить"}
+            </Button>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   );
