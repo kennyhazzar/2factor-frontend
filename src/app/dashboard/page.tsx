@@ -9,7 +9,8 @@ import { PasswordUnlock } from "@/components/auth/PasswordUnlock";
 import { TokenList } from "@/components/vault/TokenList";
 import { AddTokenForm } from "@/components/vault/AddTokenForm";
 import { Button } from "@/components/ui/button";
-import { LogOutIcon, Loader2Icon } from "lucide-react";
+import { LogOutIcon, Loader2Icon, DownloadIcon } from "lucide-react";
+import { buildOtpAuthUri } from "@/lib/totp";
 import { toast } from "sonner";
 
 export default function DashboardPage() {
@@ -31,6 +32,35 @@ export default function DashboardPage() {
       router.push("/login");
     }
   }, [authLoading, isAuthenticated, router]);
+
+  const handleExport = useCallback(() => {
+    if (tokens.length === 0) {
+      toast.error("Нет токенов для экспорта");
+      return;
+    }
+
+    const date = new Date().toISOString().slice(0, 10);
+    const lines = [
+      "# 2FA Vault Backup",
+      `# Дата: ${date}`,
+      `# Токенов: ${tokens.length}`,
+      "#",
+      "# Каждая строка — otpauth:// URI, совместимый с Google Authenticator.",
+      "# ВНИМАНИЕ: Этот файл содержит секретные ключи. Храните в безопасном месте!",
+      "",
+      ...tokens.map((t) => buildOtpAuthUri(t)),
+      "",
+    ];
+
+    const blob = new Blob([lines.join("\n")], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `2fa-backup-${date}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Бекап сохранён");
+  }, [tokens]);
 
   const handleDelete = useCallback(
     async (id: string) => {
@@ -78,6 +108,9 @@ export default function DashboardPage() {
         </div>
         <div className="flex items-center gap-2">
           <AddTokenForm onAdd={addToken} />
+          <Button variant="ghost" size="icon" onClick={handleExport} aria-label="Экспорт">
+            <DownloadIcon className="size-4" />
+          </Button>
           <Button variant="ghost" size="icon" onClick={logout} aria-label="Выйти">
             <LogOutIcon className="size-4" />
           </Button>

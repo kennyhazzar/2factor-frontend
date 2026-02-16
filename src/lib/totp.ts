@@ -204,3 +204,35 @@ export function parseOtpAuthUri(uri: string): {
 
   return { issuer, account, secret, algorithm, digits, period };
 }
+
+/**
+ * Build an otpauth:// URI from token parameters.
+ */
+export function buildOtpAuthUri(token: {
+  issuer: string;
+  account: string;
+  secret: string;
+  algorithm: TOTPAlgorithm;
+  digits: 6 | 7 | 8;
+  period: number;
+}): string {
+  const label = token.issuer
+    ? `${encodeURIComponent(token.issuer)}:${encodeURIComponent(token.account)}`
+    : encodeURIComponent(token.account);
+
+  const algorithmMap: Record<TOTPAlgorithm, string> = {
+    "SHA-1": "SHA1",
+    "SHA-256": "SHA256",
+    "SHA-512": "SHA512",
+  };
+
+  const params = new URLSearchParams({
+    secret: token.secret,
+    issuer: token.issuer,
+    algorithm: algorithmMap[token.algorithm],
+    digits: String(token.digits),
+    period: String(token.period),
+  });
+
+  return `otpauth://totp/${label}?${params.toString()}`;
+}

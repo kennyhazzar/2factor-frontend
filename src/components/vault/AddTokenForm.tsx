@@ -150,9 +150,9 @@ export function AddTokenForm({ onAdd }: AddTokenFormProps) {
       }}
     >
       <DialogTrigger asChild>
-        <Button>
+        <Button size="icon" className="sm:size-auto sm:px-4 sm:py-2">
           <PlusIcon className="size-4" />
-          Добавить токен
+          <span className="hidden sm:inline">Добавить токен</span>
         </Button>
       </DialogTrigger>
       <DialogContent>

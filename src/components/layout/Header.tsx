@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -10,9 +11,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { MenuIcon } from "lucide-react";
 
 export function Header() {
   const { isAuthenticated, user, logout } = useAuth();
+  const [open, setOpen] = useState(false);
+
+  const close = () => setOpen(false);
 
   return (
     <header className="border-b border-border bg-card/50 backdrop-blur-sm">
@@ -21,7 +32,8 @@ export function Header() {
           <span className="text-primary">2FA</span> Vault
         </Link>
 
-        <nav className="flex items-center gap-2">
+        {/* Desktop nav */}
+        <nav className="hidden items-center gap-2 sm:flex">
           <Link href="/generator">
             <Button variant="ghost" size="sm">
               Генератор
@@ -65,6 +77,69 @@ export function Header() {
             </>
           )}
         </nav>
+
+        {/* Mobile burger */}
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon" className="sm:hidden">
+              <MenuIcon className="size-5" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="right" className="w-64">
+            <SheetTitle className="sr-only">Меню</SheetTitle>
+            <nav className="flex flex-col gap-2 pt-6">
+              <Link href="/generator" onClick={close}>
+                <Button variant="ghost" className="w-full justify-start">
+                  Генератор
+                </Button>
+              </Link>
+
+              {isAuthenticated ? (
+                <>
+                  <Link href="/dashboard" onClick={close}>
+                    <Button variant="ghost" className="w-full justify-start">
+                      Токены
+                    </Button>
+                  </Link>
+                  <Link href="/settings" onClick={close}>
+                    <Button variant="ghost" className="w-full justify-start">
+                      Настройки
+                    </Button>
+                  </Link>
+                  <div className="my-2 border-t border-border" />
+                  {user?.email && (
+                    <p className="px-4 text-sm text-muted-foreground">
+                      {user.email}
+                    </p>
+                  )}
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start text-destructive"
+                    onClick={() => {
+                      logout();
+                      close();
+                    }}
+                  >
+                    Выйти
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Link href="/login" onClick={close}>
+                    <Button variant="ghost" className="w-full justify-start">
+                      Войти
+                    </Button>
+                  </Link>
+                  <Link href="/register" onClick={close}>
+                    <Button className="w-full justify-start">
+                      Регистрация
+                    </Button>
+                  </Link>
+                </>
+              )}
+            </nav>
+          </SheetContent>
+        </Sheet>
       </div>
     </header>
   );
