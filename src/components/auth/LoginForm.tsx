@@ -49,7 +49,7 @@ export function LoginForm() {
         </CardTitle>
         <CardDescription>Войдите в свой аккаунт</CardDescription>
       </CardHeader>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="space-y-4">
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
