@@ -53,6 +53,7 @@ export function useVault(): UseVaultReturn {
             encryptedData,
             iv,
             expectedVersion: currentVersion,
+            tokenCount: updatedTokens.length,
           },
         },
       });

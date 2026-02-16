@@ -26,7 +26,7 @@ import type { VaultData } from "@/types/vault";
 
 export default function SettingsPage() {
   const { isAuthenticated, user, logout, isLoading: authLoading } = useAuth();
-  const { isUnlocked, authKey, encryptionKey, setKeys } = useCrypto();
+  const { isUnlocked, encryptionKey, setKeys } = useCrypto();
   const router = useRouter();
 
   const [oldPassword, setOldPassword] = useState("");
@@ -35,6 +35,7 @@ export default function SettingsPage() {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [deletePassword, setDeletePassword] = useState("");
 
   if (authLoading) return null;
   if (!isAuthenticated) {
@@ -128,23 +129,45 @@ export default function SettingsPage() {
 
   const handleDeleteAccount = async () => {
     if (deleteConfirm !== "УДАЛИТЬ") return;
+    if (!deletePassword) {
+      toast.error("Введите пароль");
+      return;
+    }
 
     setIsDeletingAccount(true);
     try {
-      await apolloClient.mutate({ mutation: DELETE_ACCOUNT_MUTATION });
+      // Derive authKey from entered password
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: saltResp } = await apolloClient.query<any>({
+        query: AUTH_SALT_QUERY,
+        variables: { email: user!.email },
+      });
+      const saltHex = saltResp.authSalt.salt;
+      const { authKey: derivedAuthKey } = await deriveKeys(
+        deletePassword,
+        fromHex(saltHex)
+      );
+
+      await apolloClient.mutate({
+        mutation: DELETE_ACCOUNT_MUTATION,
+        variables: { authKey: derivedAuthKey },
+      });
       await logout();
       toast.success("Аккаунт удалён");
     } catch (err: unknown) {
-      toast.error(
-        err instanceof Error ? err.message : "Ошибка удаления аккаунта"
-      );
+      const message = err instanceof Error ? err.message : "";
+      if (message.includes("password_mismatched") || message.includes("password")) {
+        toast.error("Неверный пароль");
+      } else {
+        toast.error(message || "Ошибка удаления аккаунта");
+      }
     } finally {
       setIsDeletingAccount(false);
     }
   };
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 p-4 pt-8">
+    <div className="mx-auto w-full max-w-2xl space-y-6 p-4 pt-8">
       <h1 className="text-2xl font-bold">Настройки</h1>
 
       <Card>
@@ -209,14 +232,30 @@ export default function SettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Input
-            placeholder='Введите "УДАЛИТЬ"'
-            value={deleteConfirm}
-            onChange={(e) => setDeleteConfirm(e.target.value)}
-          />
+          <div className="space-y-2">
+            <Label>Пароль</Label>
+            <Input
+              type="password"
+              placeholder="Введите текущий пароль"
+              value={deletePassword}
+              onChange={(e) => setDeletePassword(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Подтверждение</Label>
+            <Input
+              placeholder='Введите "УДАЛИТЬ"'
+              value={deleteConfirm}
+              onChange={(e) => setDeleteConfirm(e.target.value)}
+            />
+          </div>
           <Button
             variant="destructive"
-            disabled={deleteConfirm !== "УДАЛИТЬ" || isDeletingAccount}
+            disabled={
+              deleteConfirm !== "УДАЛИТЬ" ||
+              !deletePassword ||
+              isDeletingAccount
+            }
             onClick={handleDeleteAccount}
           >
             {isDeletingAccount ? "Удаление..." : "Удалить аккаунт навсегда"}

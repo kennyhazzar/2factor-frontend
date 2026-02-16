@@ -76,8 +76,8 @@ export const CHANGE_PASSWORD_MUTATION = gql`
 `;
 
 export const DELETE_ACCOUNT_MUTATION = gql`
-  mutation DeleteAccount {
-    deleteAccount
+  mutation DeleteAccount($authKey: String!) {
+    deleteAccount(authKey: $authKey)
   }
 `;
 

@@ -12,9 +12,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <ApolloProvider client={apolloClient}>
       <CryptoProvider>
         <AuthProvider>
-          <div className="flex h-full flex-col">
+          <div className="flex min-h-screen flex-col">
             <Header />
-            <main className="flex min-h-0 flex-1 flex-col overflow-auto">
+            <main className="flex flex-1 flex-col">
               {children}
             </main>
             <footer className="shrink-0 py-4 text-center text-sm text-muted-foreground">

@@ -26,7 +26,7 @@ export function Header() {
   const close = () => setOpen(false);
 
   return (
-    <header className="border-b border-border bg-card/50 backdrop-blur-sm">
+    <header className="sticky top-0 z-50 border-b border-border bg-card/50 backdrop-blur-sm">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
         <Link href="/" className="text-lg font-bold tracking-tight">
           <span className="text-primary">2FA</span> Vault
