@@ -10,7 +10,6 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import { apolloClient } from "@/lib/apollo-client";
-import { setTokens, clearTokens, getAccessToken, getRefreshToken } from "@/lib/apollo-client";
 import { useCrypto } from "@/contexts/CryptoContext";
 import { deriveKeys, fromHex, generateSalt, toHex } from "@/lib/crypto";
 import { AUTH_SALT_QUERY, ME_QUERY } from "@/lib/graphql/queries";
@@ -41,20 +40,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { setKeys, lock } = useCrypto();
 
-  // Restore session on mount from persisted tokens
+  // Restore session on mount — cookies are sent automatically
   useEffect(() => {
     const restoreSession = async () => {
-      const token = getAccessToken();
-      if (!token) {
-        setState((prev) => ({ ...prev, isLoading: false }));
-        return;
-      }
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data } = await apolloClient.query<any>({ query: ME_QUERY });
         setState({ user: data.me, isAuthenticated: true, isLoading: false });
       } catch {
-        clearTokens();
         setState({ user: null, isAuthenticated: false, isLoading: false });
       }
     };
@@ -71,21 +64,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       const saltHex: string = saltData.authSalt.salt;
 
-      // 2. Derive keys locally (NO state change yet)
+      // 2. Derive keys locally
       const salt = fromHex(saltHex);
       const { authKey, encryptionKey } = await deriveKeys(password, salt);
 
-      // 3. Login with authKey — server verifies via Argon2
+      // 3. Login with authKey — server verifies via Argon2 and sets cookies
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data } = await apolloClient.mutate<any>({
         mutation: LOGIN_MUTATION,
         variables: { input: { email, authKey } },
       });
 
-      const { accessToken, refreshToken, user } = data.login;
+      const { user } = data.login;
 
-      // 4. Only after server confirms — store tokens and set keys
-      setTokens(accessToken, refreshToken);
+      // 4. Set crypto keys (tokens are in cookies now)
       setKeys(authKey, encryptionKey);
 
       // 5. Update state
@@ -104,20 +96,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const salt = generateSalt();
       const kdfSalt = toHex(salt);
 
-      // 2. Derive keys locally (NO state change yet)
+      // 2. Derive keys locally
       const { authKey, encryptionKey } = await deriveKeys(password, salt);
 
-      // 3. Register — server stores hashed authKey
+      // 3. Register — server stores hashed authKey and sets cookies
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data } = await apolloClient.mutate<any>({
         mutation: REGISTER_MUTATION,
         variables: { input: { email, authKey, kdfSalt } },
       });
 
-      const { accessToken, refreshToken, user } = data.register;
+      const { user } = data.register;
 
-      // 4. Only after server confirms — store tokens and set keys
-      setTokens(accessToken, refreshToken);
+      // 4. Set crypto keys (tokens are in cookies now)
       setKeys(authKey, encryptionKey);
 
       // 5. Update state
@@ -132,18 +123,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     try {
-      const rt = getRefreshToken();
-      if (rt) {
-        await apolloClient.mutate({
-          mutation: LOGOUT_MUTATION,
-          variables: { input: { refreshToken: rt } },
-        });
-      }
+      await apolloClient.mutate({ mutation: LOGOUT_MUTATION });
     } catch {
       // Ignore logout errors
     }
 
-    clearTokens();
     lock();
     setState({ user: null, isAuthenticated: false, isLoading: false });
     await apolloClient.clearStore();

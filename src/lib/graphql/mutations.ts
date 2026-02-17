@@ -3,8 +3,6 @@ import { gql } from "@apollo/client";
 export const REGISTER_MUTATION = gql`
   mutation Register($input: RegisterInput!) {
     register(input: $input) {
-      accessToken
-      refreshToken
       user {
         id
         email
@@ -19,8 +17,6 @@ export const REGISTER_MUTATION = gql`
 export const LOGIN_MUTATION = gql`
   mutation Login($input: UserLoginInput!) {
     login(input: $input) {
-      accessToken
-      refreshToken
       user {
         id
         email
@@ -33,17 +29,16 @@ export const LOGIN_MUTATION = gql`
 `;
 
 export const REFRESH_TOKENS_MUTATION = gql`
-  mutation RefreshTokens($input: RefreshTokenInput) {
-    refreshTokens(input: $input) {
-      accessToken
-      refreshToken
+  mutation RefreshTokens {
+    refreshTokens {
+      csrfToken
     }
   }
 `;
 
 export const LOGOUT_MUTATION = gql`
-  mutation Logout($input: RefreshTokenInput) {
-    logout(input: $input) {
+  mutation Logout {
+    logout {
       success
     }
   }
@@ -62,8 +57,6 @@ export const UPDATE_VAULT_MUTATION = gql`
 export const CHANGE_PASSWORD_MUTATION = gql`
   mutation ChangePassword($input: ChangePasswordInput!) {
     changePassword(input: $input) {
-      accessToken
-      refreshToken
       user {
         id
         email

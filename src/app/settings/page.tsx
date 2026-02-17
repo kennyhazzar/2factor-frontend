@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCrypto } from "@/contexts/CryptoContext";
 import { apolloClient } from "@/lib/apollo-client";
-import { setTokens } from "@/lib/apollo-client";
 import { generateSalt, toHex, deriveKeys, fromHex, encryptVault, decryptVault } from "@/lib/crypto";
 import { CHANGE_PASSWORD_MUTATION, DELETE_ACCOUNT_MUTATION } from "@/lib/graphql/mutations";
 import { GET_VAULT_QUERY, AUTH_SALT_QUERY } from "@/lib/graphql/queries";
@@ -98,8 +97,7 @@ export default function SettingsPage() {
       }
 
       // 5. Call changePassword mutation
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data } = await apolloClient.mutate<any>({
+      await apolloClient.mutate({
         mutation: CHANGE_PASSWORD_MUTATION,
         variables: {
           input: {
@@ -112,8 +110,7 @@ export default function SettingsPage() {
         },
       });
 
-      // 6. Update tokens and set new keys (server already verified)
-      setTokens(data.changePassword.accessToken, data.changePassword.refreshToken);
+      // 6. Set new crypto keys (cookies updated by server automatically)
       setKeys(newAuthKey, newEncKey);
 
       setOldPassword("");

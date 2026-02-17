@@ -14,87 +14,56 @@ import { CombinedGraphQLErrors } from "@apollo/client/errors";
 const GRAPHQL_URL =
   process.env.NEXT_PUBLIC_GRAPHQL_URL || "http://localhost:3001/graphql";
 
-// Module-level token storage (memory + localStorage for persistence across refresh)
-let accessToken: string | null = null;
-let refreshToken: string | null = null;
-
-const ACCESS_KEY = "2fa_access_token";
-const REFRESH_KEY = "2fa_refresh_token";
-
-export function setTokens(access: string, refresh: string) {
-  accessToken = access;
-  refreshToken = refresh;
-  if (typeof window !== "undefined") {
-    localStorage.setItem(ACCESS_KEY, access);
-    localStorage.setItem(REFRESH_KEY, refresh);
-  }
-}
-
-export function clearTokens() {
-  accessToken = null;
-  refreshToken = null;
-  if (typeof window !== "undefined") {
-    localStorage.removeItem(ACCESS_KEY);
-    localStorage.removeItem(REFRESH_KEY);
-  }
-}
-
-export function getAccessToken() {
-  if (!accessToken && typeof window !== "undefined") {
-    accessToken = localStorage.getItem(ACCESS_KEY);
-  }
-  return accessToken;
-}
-
-export function getRefreshToken() {
-  if (!refreshToken && typeof window !== "undefined") {
-    refreshToken = localStorage.getItem(REFRESH_KEY);
-  }
-  return refreshToken;
+function getCsrfToken(): string | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(/(?:^|;\s*)csrf-token=([^;]*)/);
+  return match ? decodeURIComponent(match[1]) : null;
 }
 
 // Refresh tokens via raw fetch to avoid Apollo recursion
 async function refreshAccessToken(): Promise<boolean> {
-  if (!refreshToken) return false;
-
   try {
+    const csrfToken = getCsrfToken();
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (csrfToken) {
+      headers["x-csrf-token"] = csrfToken;
+    }
+
     const response = await fetch(GRAPHQL_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      headers,
       body: JSON.stringify({
         query: `
-          mutation RefreshTokens($input: RefreshTokenInput) {
-            refreshTokens(input: $input) {
-              accessToken
-              refreshToken
+          mutation RefreshTokens {
+            refreshTokens {
+              csrfToken
             }
           }
         `,
-        variables: { input: { refreshToken } },
       }),
     });
 
     const json = await response.json();
-    const data = json?.data?.refreshTokens;
-
-    if (data?.accessToken && data?.refreshToken) {
-      setTokens(data.accessToken, data.refreshToken);
-      return true;
-    }
-
-    return false;
+    return !!json?.data?.refreshTokens;
   } catch {
     return false;
   }
 }
 
-const httpLink = new HttpLink({ uri: GRAPHQL_URL });
+const httpLink = new HttpLink({
+  uri: GRAPHQL_URL,
+  credentials: "include",
+});
 
-const authLink = new ApolloLink((operation, forward) => {
-  if (accessToken) {
+const csrfLink = new ApolloLink((operation, forward) => {
+  const csrfToken = getCsrfToken();
+  if (csrfToken) {
     operation.setContext({
       headers: {
-        Authorization: `Bearer ${accessToken}`,
+        "x-csrf-token": csrfToken,
       },
     });
   }
@@ -131,12 +100,10 @@ const errorLink = new ErrorLink(({ error, operation, forward }) => {
           pendingRequests = [];
           forward(operation).subscribe(observer);
         } else {
-          clearTokens();
           observer.error(error);
         }
       })
       .catch(() => {
-        clearTokens();
         observer.error(error);
       })
       .finally(() => {
@@ -146,7 +113,7 @@ const errorLink = new ErrorLink(({ error, operation, forward }) => {
 });
 
 export const apolloClient = new ApolloClient({
-  link: from([errorLink, authLink, httpLink]),
+  link: from([errorLink, csrfLink, httpLink]),
   cache: new InMemoryCache(),
   defaultOptions: {
     watchQuery: { fetchPolicy: "cache-and-network" },
