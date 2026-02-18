@@ -6,8 +6,10 @@ import { CryptoProvider } from "@/contexts/CryptoContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { Toaster } from "@/components/ui/sonner";
 import { Header } from "@/components/layout/Header";
+import { useTranslations } from "next-intl";
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  const t = useTranslations("footer");
   return (
     <ApolloProvider client={apolloClient}>
       <CryptoProvider>
@@ -18,14 +20,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
               {children}
             </main>
             <footer className="shrink-0 py-4 text-center text-sm text-muted-foreground">
-              Возникли трудности?{" "}
+              {t("trouble")}{" "}
               <a
                 href="https://t.me/kennyhazzar"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary hover:underline"
               >
-                Напишите в Telegram
+                {t("telegram")}
               </a>
             </footer>
           </div>

@@ -167,5 +167,9 @@
     "cancel": "Отмена",
     "delete": "Удалить",
     "copyAriaLabel": "Скопировать"
+  },
+  "footer": {
+    "trouble": "Возникли трудности?",
+    "telegram": "Напишите в Telegram"
   }
 }

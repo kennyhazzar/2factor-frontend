@@ -167,5 +167,9 @@
     "cancel": "Annuler",
     "delete": "Supprimer",
     "copyAriaLabel": "Copier"
+  },
+  "footer": {
+    "trouble": "Des difficultés ?",
+    "telegram": "Écrivez-nous sur Telegram"
   }
 }
