@@ -2,6 +2,7 @@
 
 import { useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCrypto } from "@/contexts/CryptoContext";
 import { useVault } from "@/hooks/useVault";
@@ -17,12 +18,15 @@ export default function DashboardPage() {
   const { isAuthenticated, isLoading: authLoading, logout, user } = useAuth();
   const { isUnlocked } = useCrypto();
   const router = useRouter();
+  const t = useTranslations("dashboard");
+  const tb = useTranslations("backup");
 
   const {
     tokens,
     isLoading: vaultLoading,
     error: vaultError,
     addToken,
+    updateToken,
     removeToken,
   } = useVault();
 
@@ -35,18 +39,18 @@ export default function DashboardPage() {
 
   const handleExport = useCallback(() => {
     if (tokens.length === 0) {
-      toast.error("Нет токенов для экспорта");
+      toast.error(t("noTokensForExport"));
       return;
     }
 
     const date = new Date().toISOString().slice(0, 10);
     const lines = [
-      "# 2FA Vault Backup",
-      `# Дата: ${date}`,
-      `# Токенов: ${tokens.length}`,
+      `# ${tb("header")}`,
+      `# ${tb("date", { date })}`,
+      `# ${tb("count", { count: tokens.length })}`,
       "#",
-      "# Каждая строка — otpauth:// URI, совместимый с Google Authenticator.",
-      "# ВНИМАНИЕ: Этот файл содержит секретные ключи. Храните в безопасном месте!",
+      `# ${tb("format")}`,
+      `# ${tb("warning")}`,
       "",
       ...tokens.map((t) => buildOtpAuthUri(t)),
       "",
@@ -59,21 +63,21 @@ export default function DashboardPage() {
     a.download = `2fa-backup-${date}.txt`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success("Бекап сохранён");
-  }, [tokens]);
+    toast.success(t("backupSaved"));
+  }, [tokens, t, tb]);
 
   const handleDelete = useCallback(
     async (id: string) => {
       try {
         await removeToken(id);
-        toast.success("Токен удален");
+        toast.success(t("tokenDeleted"));
       } catch (err: unknown) {
         const message =
-          err instanceof Error ? err.message : "Ошибка удаления токена";
+          err instanceof Error ? err.message : t("tokenDeleteError");
         toast.error(message);
       }
     },
-    [removeToken]
+    [removeToken, t]
   );
 
   // Show nothing while checking auth
@@ -101,17 +105,17 @@ export default function DashboardPage() {
       {/* Header */}
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Мои токены</h1>
+          <h1 className="text-2xl font-bold">{t("title")}</h1>
           {user?.email && (
             <p className="text-sm text-muted-foreground">{user.email}</p>
           )}
         </div>
         <div className="flex items-center gap-2">
           <AddTokenForm onAdd={addToken} />
-          <Button variant="ghost" size="icon" onClick={handleExport} aria-label="Экспорт">
+          <Button variant="ghost" size="icon" onClick={handleExport} aria-label={t("exportAriaLabel")}>
             <DownloadIcon className="size-4" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={logout} aria-label="Выйти">
+          <Button variant="ghost" size="icon" onClick={logout} aria-label={t("logoutAriaLabel")}>
             <LogOutIcon className="size-4" />
           </Button>
         </div>
@@ -132,6 +136,7 @@ export default function DashboardPage() {
       ) : (
         <TokenList
           tokens={tokens}
+          onUpdate={updateToken}
           onDelete={handleDelete}
         />
       )}

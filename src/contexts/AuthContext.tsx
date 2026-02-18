@@ -77,10 +77,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const { user } = data.login;
 
-      // 4. Set crypto keys (tokens are in cookies now)
+      // 4. Sync language cookie from user profile
+      if (user.language) {
+        document.cookie = `NEXT_LOCALE=${user.language};path=/;max-age=31536000;SameSite=Lax`;
+      }
+
+      // 5. Set crypto keys (tokens are in cookies now)
       setKeys(authKey, encryptionKey);
 
-      // 5. Update state
+      // 6. Update state
       setState({
         user,
         isAuthenticated: true,
@@ -108,10 +113,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const { user } = data.register;
 
-      // 4. Set crypto keys (tokens are in cookies now)
+      // 4. Sync language cookie from user profile
+      if (user.language) {
+        document.cookie = `NEXT_LOCALE=${user.language};path=/;max-age=31536000;SameSite=Lax`;
+      }
+
+      // 5. Set crypto keys (tokens are in cookies now)
       setKeys(authKey, encryptionKey);
 
-      // 5. Update state
+      // 6. Update state
       setState({
         user,
         isAuthenticated: true,

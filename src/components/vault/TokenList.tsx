@@ -2,18 +2,20 @@
 
 import { useState, useMemo } from "react";
 import { SearchIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { TokenCard } from "./TokenCard";
 import { Input } from "@/components/ui/input";
 import type { TOTPToken } from "@/types/vault";
 
 interface TokenListProps {
   tokens: TOTPToken[];
-  onEdit?: (id: string) => void;
+  onUpdate?: (id: string, updates: Partial<TOTPToken>) => Promise<void>;
   onDelete?: (id: string) => void;
 }
 
-export function TokenList({ tokens, onEdit, onDelete }: TokenListProps) {
+export function TokenList({ tokens, onUpdate, onDelete }: TokenListProps) {
   const [search, setSearch] = useState("");
+  const t = useTranslations("vault");
 
   const filteredTokens = useMemo(() => {
     if (!search.trim()) return tokens;
@@ -34,7 +36,7 @@ export function TokenList({ tokens, onEdit, onDelete }: TokenListProps) {
           <SearchIcon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="text"
-            placeholder="Поиск по имени или аккаунту..."
+            placeholder={t("searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
@@ -46,12 +48,12 @@ export function TokenList({ tokens, onEdit, onDelete }: TokenListProps) {
       {tokens.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <p className="text-muted-foreground">
-            Нет токенов. Добавьте первый!
+            {t("noTokens")}
           </p>
         </div>
       ) : filteredTokens.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <p className="text-muted-foreground">Ничего не найдено</p>
+          <p className="text-muted-foreground">{t("noResults")}</p>
         </div>
       ) : (
         <div className="flex flex-col gap-3">
@@ -59,7 +61,7 @@ export function TokenList({ tokens, onEdit, onDelete }: TokenListProps) {
             <TokenCard
               key={token.id}
               token={token}
-              onEdit={onEdit}
+              onUpdate={onUpdate}
               onDelete={onDelete}
             />
           ))}

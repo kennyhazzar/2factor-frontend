@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,18 +25,19 @@ export function RegisterForm() {
   const [isLoading, setIsLoading] = useState(false);
   const { register } = useAuth();
   const router = useRouter();
+  const t = useTranslations("auth");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password || !confirmPassword) return;
 
     if (password !== confirmPassword) {
-      toast.error("Пароли не совпадают");
+      toast.error(t("passwordsMismatch"));
       return;
     }
 
     if (password.length < 8) {
-      toast.error("Пароль должен быть не менее 8 символов");
+      toast.error(t("passwordMinLength"));
       return;
     }
 
@@ -45,7 +47,7 @@ export function RegisterForm() {
       router.push("/dashboard");
     } catch (err: unknown) {
       const message =
-        err instanceof Error ? err.message : "Ошибка регистрации";
+        err instanceof Error ? err.message : t("registerError");
       toast.error(message);
     } finally {
       setIsLoading(false);
@@ -58,16 +60,16 @@ export function RegisterForm() {
         <CardTitle className="text-2xl">
           <span className="text-primary">2FA</span> Vault
         </CardTitle>
-        <CardDescription>Создайте аккаунт</CardDescription>
+        <CardDescription>{t("registerTitle")}</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit} className="space-y-4">
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t("emailLabel")}</Label>
             <Input
               id="email"
               type="email"
-              placeholder="you@example.com"
+              placeholder={t("emailPlaceholder")}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -75,11 +77,11 @@ export function RegisterForm() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Пароль</Label>
+            <Label htmlFor="password">{t("passwordLabel")}</Label>
             <Input
               id="password"
               type="password"
-              placeholder="Минимум 8 символов"
+              placeholder={t("passwordPlaceholder")}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -88,7 +90,7 @@ export function RegisterForm() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Подтвердите пароль</Label>
+            <Label htmlFor="confirmPassword">{t("confirmPasswordLabel")}</Label>
             <Input
               id="confirmPassword"
               type="password"
@@ -101,12 +103,12 @@ export function RegisterForm() {
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "Создание ключей..." : "Зарегистрироваться"}
+            {isLoading ? t("registerSubmitting") : t("registerSubmit")}
           </Button>
           <p className="text-sm text-muted-foreground">
-            Уже есть аккаунт?{" "}
+            {t("hasAccount")}{" "}
             <Link href="/login" className="text-primary hover:underline">
-              Войти
+              {t("loginLink")}
             </Link>
           </p>
         </CardFooter>

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import jsQR from "jsqr";
+import { useTranslations } from "next-intl";
 import { Loader2Icon, CameraOffIcon } from "lucide-react";
 
 interface QRScannerProps {
@@ -16,6 +17,7 @@ export function QRScanner({ onScan, onError }: QRScannerProps) {
   const streamRef = useRef<MediaStream | null>(null);
   const [isStarting, setIsStarting] = useState(true);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const t = useTranslations("vault");
 
   useEffect(() => {
     let cancelled = false;
@@ -41,8 +43,8 @@ export function QRScanner({ onScan, onError }: QRScannerProps) {
         scanFrame();
       } catch {
         if (!cancelled) {
-          setCameraError("Нет доступа к камере");
-          onError("Нет доступа к камере. Разрешите доступ в настройках браузера.");
+          setCameraError(t("noCameraAccess"));
+          onError(t("noCameraAccessDetail"));
         }
       }
     };
@@ -79,7 +81,7 @@ export function QRScanner({ onScan, onError }: QRScannerProps) {
       cancelAnimationFrame(animationRef.current);
       streamRef.current?.getTracks().forEach((t) => t.stop());
     };
-  }, [onScan, onError]);
+  }, [onScan, onError, t]);
 
   if (cameraError) {
     return (

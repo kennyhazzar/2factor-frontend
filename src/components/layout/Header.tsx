@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,10 +19,12 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { MenuIcon } from "lucide-react";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 
 export function Header() {
   const { isAuthenticated, user, logout } = useAuth();
   const [open, setOpen] = useState(false);
+  const t = useTranslations("header");
 
   const close = () => setOpen(false);
 
@@ -36,30 +39,32 @@ export function Header() {
         <nav className="hidden items-center gap-2 sm:flex">
           <Link href="/generator">
             <Button variant="ghost" size="sm">
-              Генератор
+              {t("generator")}
             </Button>
           </Link>
+
+          <LanguageSwitcher />
 
           {isAuthenticated ? (
             <>
               <Link href="/dashboard">
                 <Button variant="ghost" size="sm">
-                  Токены
+                  {t("tokens")}
                 </Button>
               </Link>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm">
-                    {user?.email ?? "Аккаунт"}
+                    {user?.email ?? t("account")}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem asChild>
-                    <Link href="/settings">Настройки</Link>
+                    <Link href="/settings">{t("settings")}</Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => logout()}>
-                    Выйти
+                    {t("signOut")}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -68,11 +73,11 @@ export function Header() {
             <>
               <Link href="/login">
                 <Button variant="ghost" size="sm">
-                  Войти
+                  {t("signIn")}
                 </Button>
               </Link>
               <Link href="/register">
-                <Button size="sm">Регистрация</Button>
+                <Button size="sm">{t("register")}</Button>
               </Link>
             </>
           )}
@@ -86,24 +91,28 @@ export function Header() {
             </Button>
           </SheetTrigger>
           <SheetContent side="right" className="w-64">
-            <SheetTitle className="sr-only">Меню</SheetTitle>
+            <SheetTitle className="sr-only">{t("menu")}</SheetTitle>
             <nav className="flex flex-col gap-2 pt-6">
               <Link href="/generator" onClick={close}>
                 <Button variant="ghost" className="w-full justify-start">
-                  Генератор
+                  {t("generator")}
                 </Button>
               </Link>
+
+              <div className="flex justify-start px-1">
+                <LanguageSwitcher />
+              </div>
 
               {isAuthenticated ? (
                 <>
                   <Link href="/dashboard" onClick={close}>
                     <Button variant="ghost" className="w-full justify-start">
-                      Токены
+                      {t("tokens")}
                     </Button>
                   </Link>
                   <Link href="/settings" onClick={close}>
                     <Button variant="ghost" className="w-full justify-start">
-                      Настройки
+                      {t("settings")}
                     </Button>
                   </Link>
                   <div className="my-2 border-t border-border" />
@@ -120,19 +129,19 @@ export function Header() {
                       close();
                     }}
                   >
-                    Выйти
+                    {t("signOut")}
                   </Button>
                 </>
               ) : (
                 <>
                   <Link href="/login" onClick={close}>
                     <Button variant="ghost" className="w-full justify-start">
-                      Войти
+                      {t("signIn")}
                     </Button>
                   </Link>
                   <Link href="/register" onClick={close}>
                     <Button className="w-full justify-start">
-                      Регистрация
+                      {t("register")}
                     </Button>
                   </Link>
                 </>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { generateTOTP, formatCode, getRemainingSeconds } from "@/lib/totp";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +17,8 @@ export function SharedGenerator({ secret }: SharedGeneratorProps) {
   const [code, setCode] = useState("");
   const [remaining, setRemaining] = useState(30);
   const [error, setError] = useState(false);
+  const t = useTranslations("generator");
+  const tc = useTranslations("common");
 
   const generate = useCallback(async () => {
     try {
@@ -54,7 +57,7 @@ export function SharedGenerator({ secret }: SharedGeneratorProps) {
   const handleCopy = () => {
     if (code) {
       navigator.clipboard.writeText(code);
-      toast.success("Скопировано");
+      toast.success(tc("copied"));
     }
   };
 
@@ -62,17 +65,16 @@ export function SharedGenerator({ secret }: SharedGeneratorProps) {
     return (
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Ошибка</CardTitle>
+          <CardTitle>{t("sharedErrorTitle")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Невалидный секрет. Убедитесь, что ссылка содержит корректный Base32
-            ключ.
+            {t("sharedInvalidSecret")}
           </p>
           <Link href="/generator">
             <Button variant="outline" className="w-full">
               <ArrowLeftIcon className="size-4" />
-              Открыть генератор
+              {t("openGenerator")}
             </Button>
           </Link>
         </CardContent>
@@ -83,7 +85,7 @@ export function SharedGenerator({ secret }: SharedGeneratorProps) {
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
-        <CardTitle>TOTP код</CardTitle>
+        <CardTitle>{t("sharedTitle")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {code && (
@@ -101,20 +103,20 @@ export function SharedGenerator({ secret }: SharedGeneratorProps) {
               {formatCode(code)}
             </span>
             <span className="text-sm text-muted-foreground">
-              {remaining}с — нажмите для копирования
+              {t("countdown", { remaining })}
             </span>
           </div>
         )}
 
         <Button variant="outline" className="w-full" onClick={handleCopy}>
           <CopyIcon className="size-4" />
-          Скопировать код
+          {t("copyCode")}
         </Button>
 
         <Link href="/generator">
           <Button variant="ghost" className="w-full">
             <ArrowLeftIcon className="size-4" />
-            Открыть генератор
+            {t("openGenerator")}
           </Button>
         </Link>
       </CardContent>

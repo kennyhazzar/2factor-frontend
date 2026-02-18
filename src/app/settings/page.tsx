@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCrypto } from "@/contexts/CryptoContext";
 import { apolloClient } from "@/lib/apollo-client";
@@ -27,6 +28,7 @@ export default function SettingsPage() {
   const { isAuthenticated, user, logout, isLoading: authLoading } = useAuth();
   const { isUnlocked, encryptionKey, setKeys } = useCrypto();
   const router = useRouter();
+  const t = useTranslations("settings");
 
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -35,6 +37,8 @@ export default function SettingsPage() {
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [deletePassword, setDeletePassword] = useState("");
+
+  const deleteKeyword = t("deleteKeyword");
 
   if (authLoading) return null;
   if (!isAuthenticated) {
@@ -46,11 +50,11 @@ export default function SettingsPage() {
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmNewPassword) {
-      toast.error("Новые пароли не совпадают");
+      toast.error(t("newPasswordsMismatch"));
       return;
     }
     if (newPassword.length < 8) {
-      toast.error("Пароль должен быть не менее 8 символов");
+      toast.error(t("passwordMinLength"));
       return;
     }
 
@@ -116,18 +120,18 @@ export default function SettingsPage() {
       setOldPassword("");
       setNewPassword("");
       setConfirmNewPassword("");
-      toast.success("Пароль успешно изменён");
+      toast.success(t("passwordChanged"));
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Ошибка смены пароля");
+      toast.error(err instanceof Error ? err.message : t("changePasswordError"));
     } finally {
       setIsChangingPassword(false);
     }
   };
 
   const handleDeleteAccount = async () => {
-    if (deleteConfirm !== "УДАЛИТЬ") return;
+    if (deleteConfirm !== deleteKeyword) return;
     if (!deletePassword) {
-      toast.error("Введите пароль");
+      toast.error(t("enterPassword"));
       return;
     }
 
@@ -150,13 +154,13 @@ export default function SettingsPage() {
         variables: { authKey: derivedAuthKey },
       });
       await logout();
-      toast.success("Аккаунт удалён");
+      toast.success(t("accountDeleted"));
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "";
       if (message.includes("password_mismatched") || message.includes("password")) {
-        toast.error("Неверный пароль");
+        toast.error(t("incorrectPassword"));
       } else {
-        toast.error(message || "Ошибка удаления аккаунта");
+        toast.error(message || t("deleteAccountError"));
       }
     } finally {
       setIsDeletingAccount(false);
@@ -165,26 +169,26 @@ export default function SettingsPage() {
 
   return (
     <div className="mx-auto w-full max-w-2xl space-y-6 p-4 pt-8">
-      <h1 className="text-2xl font-bold">Настройки</h1>
+      <h1 className="text-2xl font-bold">{t("title")}</h1>
 
       <Card>
         <CardHeader>
-          <CardTitle>Аккаунт</CardTitle>
+          <CardTitle>{t("accountTitle")}</CardTitle>
           <CardDescription>{user?.email}</CardDescription>
         </CardHeader>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Смена пароля</CardTitle>
+          <CardTitle>{t("changePasswordTitle")}</CardTitle>
           <CardDescription>
-            Vault будет автоматически перешифрован новым ключом
+            {t("changePasswordDescription")}
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleChangePassword}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label>Текущий пароль</Label>
+              <Label>{t("currentPasswordLabel")}</Label>
               <Input
                 type="password"
                 value={oldPassword}
@@ -193,7 +197,7 @@ export default function SettingsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Новый пароль</Label>
+              <Label>{t("newPasswordLabel")}</Label>
               <Input
                 type="password"
                 value={newPassword}
@@ -203,7 +207,7 @@ export default function SettingsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Подтвердите новый пароль</Label>
+              <Label>{t("confirmNewPasswordLabel")}</Label>
               <Input
                 type="password"
                 value={confirmNewPassword}
@@ -212,7 +216,7 @@ export default function SettingsPage() {
               />
             </div>
             <Button type="submit" disabled={isChangingPassword}>
-              {isChangingPassword ? "Смена пароля..." : "Сменить пароль"}
+              {isChangingPassword ? t("changePasswordSubmitting") : t("changePasswordSubmit")}
             </Button>
           </CardContent>
         </form>
@@ -222,26 +226,25 @@ export default function SettingsPage() {
 
       <Card className="border-destructive/50">
         <CardHeader>
-          <CardTitle className="text-destructive">Удаление аккаунта</CardTitle>
+          <CardTitle className="text-destructive">{t("deleteAccountTitle")}</CardTitle>
           <CardDescription>
-            Все данные будут безвозвратно удалены. Введите УДАЛИТЬ для
-            подтверждения.
+            {t("deleteAccountDescription", { deleteKeyword })}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>Пароль</Label>
+            <Label>{t("deletePasswordLabel")}</Label>
             <Input
               type="password"
-              placeholder="Введите текущий пароль"
+              placeholder={t("deletePasswordPlaceholder")}
               value={deletePassword}
               onChange={(e) => setDeletePassword(e.target.value)}
             />
           </div>
           <div className="space-y-2">
-            <Label>Подтверждение</Label>
+            <Label>{t("deleteConfirmLabel")}</Label>
             <Input
-              placeholder='Введите "УДАЛИТЬ"'
+              placeholder={t("deleteConfirmPlaceholder", { deleteKeyword })}
               value={deleteConfirm}
               onChange={(e) => setDeleteConfirm(e.target.value)}
             />
@@ -249,13 +252,13 @@ export default function SettingsPage() {
           <Button
             variant="destructive"
             disabled={
-              deleteConfirm !== "УДАЛИТЬ" ||
+              deleteConfirm !== deleteKeyword ||
               !deletePassword ||
               isDeletingAccount
             }
             onClick={handleDeleteAccount}
           >
-            {isDeletingAccount ? "Удаление..." : "Удалить аккаунт навсегда"}
+            {isDeletingAccount ? t("deletingAccount") : t("deleteAccountSubmit")}
           </Button>
         </CardContent>
       </Card>

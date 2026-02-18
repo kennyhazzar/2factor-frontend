@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { generateTOTP, formatCode, getRemainingSeconds } from "@/lib/totp";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +15,8 @@ export function QuickGenerator() {
   const [code, setCode] = useState("");
   const [remaining, setRemaining] = useState(30);
   const [isActive, setIsActive] = useState(false);
+  const t = useTranslations("generator");
+  const tc = useTranslations("common");
 
   const generate = useCallback(async () => {
     if (!secret.trim()) return;
@@ -22,11 +25,11 @@ export function QuickGenerator() {
       setCode(otp);
       setIsActive(true);
     } catch {
-      toast.error("Неверный секрет (должен быть Base32)");
+      toast.error(t("invalidSecret"));
       setIsActive(false);
       setCode("");
     }
-  }, [secret]);
+  }, [secret, t]);
 
   useEffect(() => {
     if (!isActive) return;
@@ -51,34 +54,34 @@ export function QuickGenerator() {
   const handleCopy = () => {
     if (code) {
       navigator.clipboard.writeText(code);
-      toast.success("Скопировано");
+      toast.success(tc("copied"));
     }
   };
 
   const handleCopyLink = () => {
     const url = `${window.location.origin}/generator/${encodeURIComponent(secret.trim())}`;
     navigator.clipboard.writeText(url);
-    toast.success("Ссылка скопирована");
+    toast.success(t("linkCopied"));
   };
 
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
-        <CardTitle>Быстрый TOTP генератор</CardTitle>
+        <CardTitle>{t("quickTitle")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="totp-secret">Secret (Base32)</Label>
+          <Label htmlFor="totp-secret">{t("secretLabel")}</Label>
           <Input
             id="totp-secret"
-            placeholder="JBSWY3DPEHPK3PXP"
+            placeholder={t("secretPlaceholder")}
             value={secret}
             onChange={(e) => setSecret(e.target.value)}
             className="font-mono"
           />
         </div>
         <Button onClick={generate} className="w-full">
-          Генерировать
+          {t("generate")}
         </Button>
 
         {isActive && code && (
@@ -96,7 +99,7 @@ export function QuickGenerator() {
               {formatCode(code)}
             </span>
             <span className="text-sm text-muted-foreground">
-              {remaining}с — нажмите для копирования
+              {t("countdown", { remaining })}
             </span>
           </div>
         )}
@@ -108,7 +111,7 @@ export function QuickGenerator() {
             onClick={handleCopyLink}
           >
             <LinkIcon className="size-4" />
-            Скопировать ссылку
+            {t("copyLink")}
           </Button>
         )}
       </CardContent>

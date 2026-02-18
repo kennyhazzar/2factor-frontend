@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { SharedGenerator } from "@/components/generator/SharedGenerator";
 
-export const metadata: Metadata = {
-  title: "TOTP код — 2FA Vault",
-  description: "Быстрый просмотр TOTP-кода по ссылке.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("metadata");
+  return {
+    title: t("sharedGeneratorTitle"),
+    description: t("sharedGeneratorDescription"),
+  };
+}
 
 export default async function SharedGeneratorPage({
   params,

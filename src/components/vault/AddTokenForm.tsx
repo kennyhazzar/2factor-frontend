@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { PlusIcon, CameraIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -29,6 +30,7 @@ export function AddTokenForm({ onAdd }: AddTokenFormProps) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<InputMode>("manual");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const t = useTranslations("vault");
 
   // Manual mode fields
   const [issuer, setIssuer] = useState("");
@@ -59,17 +61,17 @@ export function AddTokenForm({ onAdd }: AddTokenFormProps) {
 
   const handleManualSubmit = async () => {
     if (!issuer.trim()) {
-      toast.error("Введите название сервиса");
+      toast.error(t("enterIssuer"));
       return;
     }
 
     if (!secret.trim()) {
-      toast.error("Введите секретный ключ");
+      toast.error(t("enterSecret"));
       return;
     }
 
     if (!isValidBase32(secret)) {
-      toast.error("Некорректный Base32 ключ");
+      toast.error(t("invalidBase32"));
       return;
     }
 
@@ -83,12 +85,12 @@ export function AddTokenForm({ onAdd }: AddTokenFormProps) {
         digits: 6,
         period: 30,
       });
-      toast.success("Токен добавлен");
+      toast.success(t("tokenAdded"));
       resetForm();
       setOpen(false);
     } catch (err: unknown) {
       const message =
-        err instanceof Error ? err.message : "Ошибка добавления токена";
+        err instanceof Error ? err.message : t("addTokenError");
       toast.error(message);
     } finally {
       setIsSubmitting(false);
@@ -97,7 +99,7 @@ export function AddTokenForm({ onAdd }: AddTokenFormProps) {
 
   const handleUriSubmit = async () => {
     if (!uri.trim()) {
-      toast.error("Введите otpauth:// URI");
+      toast.error(t("enterUri"));
       return;
     }
 
@@ -106,7 +108,7 @@ export function AddTokenForm({ onAdd }: AddTokenFormProps) {
       parsed = parseOtpAuthUri(uri.trim());
     } catch (err: unknown) {
       const message =
-        err instanceof Error ? err.message : "Некорректный URI";
+        err instanceof Error ? err.message : t("invalidUri");
       toast.error(message);
       return;
     }
@@ -121,12 +123,12 @@ export function AddTokenForm({ onAdd }: AddTokenFormProps) {
         digits: parsed.digits,
         period: parsed.period,
       });
-      toast.success("Токен добавлен");
+      toast.success(t("tokenAdded"));
       resetForm();
       setOpen(false);
     } catch (err: unknown) {
       const message =
-        err instanceof Error ? err.message : "Ошибка добавления токена";
+        err instanceof Error ? err.message : t("addTokenError");
       toast.error(message);
     } finally {
       setIsSubmitting(false);
@@ -148,7 +150,7 @@ export function AddTokenForm({ onAdd }: AddTokenFormProps) {
       try {
         parsed = parseOtpAuthUri(scannedUri);
       } catch {
-        toast.error("QR-код не содержит корректный otpauth:// URI");
+        toast.error(t("qrInvalidUri"));
         return;
       }
 
@@ -162,18 +164,18 @@ export function AddTokenForm({ onAdd }: AddTokenFormProps) {
           digits: parsed.digits,
           period: parsed.period,
         });
-        toast.success("Токен добавлен");
+        toast.success(t("tokenAdded"));
         resetForm();
         setOpen(false);
       } catch (err: unknown) {
         const message =
-          err instanceof Error ? err.message : "Ошибка добавления токена";
+          err instanceof Error ? err.message : t("addTokenError");
         toast.error(message);
       } finally {
         setIsSubmitting(false);
       }
     },
-    [onAdd]
+    [onAdd, t]
   );
 
   const handleQRError = useCallback((message: string) => {
@@ -198,25 +200,25 @@ export function AddTokenForm({ onAdd }: AddTokenFormProps) {
       <DialogTrigger asChild>
         <Button size="icon" className="sm:size-auto sm:px-4 sm:py-2">
           <PlusIcon className="size-4" />
-          <span className="hidden sm:inline">Добавить токен</span>
+          <span className="hidden sm:inline">{t("addTokenButton")}</span>
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Добавить токен</DialogTitle>
+          <DialogTitle>{t("addTokenTitle")}</DialogTitle>
         </DialogHeader>
 
         {/* Mode tabs */}
         <div className="flex gap-1 rounded-lg bg-muted p-1">
           <button type="button" onClick={() => setMode("manual")} className={tabClass("manual")}>
-            Ручной ввод
+            {t("manualTab")}
           </button>
           <button type="button" onClick={() => setMode("uri")} className={tabClass("uri")}>
-            URI
+            {t("uriTab")}
           </button>
           <button type="button" onClick={() => setMode("scan")} className={tabClass("scan")}>
             <CameraIcon className="mr-1.5 inline-block size-4" />
-            QR
+            {t("qrTab")}
           </button>
         </div>
 
@@ -227,11 +229,11 @@ export function AddTokenForm({ onAdd }: AddTokenFormProps) {
             {mode === "manual" ? (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="issuer">Сервис *</Label>
+                  <Label htmlFor="issuer">{t("issuerLabel")}</Label>
                   <Input
                     id="issuer"
                     type="text"
-                    placeholder="Google, GitHub, etc."
+                    placeholder={t("issuerPlaceholder")}
                     value={issuer}
                     onChange={(e) => setIssuer(e.target.value)}
                     required
@@ -239,22 +241,22 @@ export function AddTokenForm({ onAdd }: AddTokenFormProps) {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="account">Аккаунт</Label>
+                  <Label htmlFor="account">{t("accountLabel")}</Label>
                   <Input
                     id="account"
                     type="text"
-                    placeholder="user@example.com"
+                    placeholder={t("accountPlaceholder")}
                     value={account}
                     onChange={(e) => setAccount(e.target.value)}
                     disabled={isSubmitting}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="secret">Секретный ключ (Base32) *</Label>
+                  <Label htmlFor="secret">{t("secretLabel")}</Label>
                   <Input
                     id="secret"
                     type="text"
-                    placeholder="JBSWY3DPEHPK3PXP"
+                    placeholder={t("secretPlaceholder")}
                     value={secret}
                     onChange={(e) => setSecret(e.target.value)}
                     required
@@ -265,10 +267,10 @@ export function AddTokenForm({ onAdd }: AddTokenFormProps) {
               </>
             ) : (
               <div className="space-y-2">
-                <Label htmlFor="uri">otpauth:// URI</Label>
+                <Label htmlFor="uri">{t("uriLabel")}</Label>
                 <textarea
                   id="uri"
-                  placeholder="otpauth://totp/Issuer:user@example.com?secret=JBSWY3DPEHPK3PXP&issuer=Issuer"
+                  placeholder={t("uriPlaceholder")}
                   value={uri}
                   onChange={(e) => setUri(e.target.value)}
                   disabled={isSubmitting}
@@ -279,7 +281,7 @@ export function AddTokenForm({ onAdd }: AddTokenFormProps) {
             )}
 
             <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? "Добавление..." : "Добавить"}
+              {isSubmitting ? t("addSubmitting") : t("addSubmit")}
             </Button>
           </form>
         )}

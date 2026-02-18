@@ -82,3 +82,12 @@ export const UPDATE_THEME_MUTATION = gql`
     }
   }
 `;
+
+export const UPDATE_LANGUAGE_MUTATION = gql`
+  mutation UpdateLanguage($input: UserUpdateLanguageInput!) {
+    userUpdateLanguage(input: $input) {
+      id
+      language
+    }
+  }
+`;

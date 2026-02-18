@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useCrypto } from "@/contexts/CryptoContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { apolloClient } from "@/lib/apollo-client";
@@ -28,6 +29,7 @@ export function PasswordUnlock() {
   const [isLoading, setIsLoading] = useState(false);
   const { setKeys } = useCrypto();
   const { user } = useAuth();
+  const t = useTranslations("auth");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,7 +59,7 @@ export function PasswordUnlock() {
       // 4. Only set keys after server verification succeeded
       setKeys(authKey, encryptionKey);
     } catch {
-      toast.error("Неверный пароль");
+      toast.error(t("unlockError"));
     } finally {
       setIsLoading(false);
     }
@@ -67,15 +69,15 @@ export function PasswordUnlock() {
     <div className="flex flex-1 items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle>Разблокировка хранилища</CardTitle>
+          <CardTitle>{t("unlockTitle")}</CardTitle>
           <CardDescription>
-            Введите пароль для расшифровки ваших токенов
+            {t("unlockDescription")}
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="unlock-password">Пароль</Label>
+              <Label htmlFor="unlock-password">{t("unlockPasswordLabel")}</Label>
               <Input
                 id="unlock-password"
                 type="password"
@@ -87,7 +89,7 @@ export function PasswordUnlock() {
               />
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Расшифровка..." : "Разблокировать"}
+              {isLoading ? t("unlockSubmitting") : t("unlockSubmit")}
             </Button>
           </CardContent>
         </form>

@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { LoginForm } from "@/components/auth/LoginForm";
 
-export const metadata: Metadata = {
-  title: "Войти — 2FA Vault",
-  description: "Войдите в свой аккаунт 2FA Vault для доступа к зашифрованному хранилищу токенов.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("metadata");
+  return {
+    title: t("loginTitle"),
+    description: t("loginDescription"),
+  };
+}
 
 export default function LoginPage() {
   return (

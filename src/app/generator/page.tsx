@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { QuickGenerator } from "@/components/generator/QuickGenerator";
 
-export const metadata: Metadata = {
-  title: "TOTP Генератор — 2FA Vault",
-  description: "Быстрый генератор одноразовых TOTP-кодов. Введите Base32 секрет и получите код без регистрации.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("metadata");
+  return {
+    title: t("generatorTitle"),
+    description: t("generatorDescription"),
+  };
+}
 
 export default function GeneratorPage() {
   return (
