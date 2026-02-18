@@ -20,6 +20,12 @@ function getCsrfToken(): string | null {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
+function getLocale(): string {
+  if (typeof document === "undefined") return "en";
+  const match = document.cookie.match(/(?:^|;\s*)NEXT_LOCALE=([^;]*)/);
+  return match ? decodeURIComponent(match[1]) : "en";
+}
+
 // Refresh tokens via raw fetch to avoid Apollo recursion
 async function refreshAccessToken(): Promise<boolean> {
   try {
@@ -58,15 +64,15 @@ const httpLink = new HttpLink({
   credentials: "include",
 });
 
-const csrfLink = new ApolloLink((operation, forward) => {
+const headersLink = new ApolloLink((operation, forward) => {
+  const headers: Record<string, string> = {
+    "Accept-Language": getLocale(),
+  };
   const csrfToken = getCsrfToken();
   if (csrfToken) {
-    operation.setContext({
-      headers: {
-        "x-csrf-token": csrfToken,
-      },
-    });
+    headers["x-csrf-token"] = csrfToken;
   }
+  operation.setContext({ headers });
   return forward(operation);
 });
 
@@ -113,7 +119,7 @@ const errorLink = new ErrorLink(({ error, operation, forward }) => {
 });
 
 export const apolloClient = new ApolloClient({
-  link: from([errorLink, csrfLink, httpLink]),
+  link: from([errorLink, headersLink, httpLink]),
   cache: new InMemoryCache(),
   defaultOptions: {
     watchQuery: { fetchPolicy: "cache-and-network" },
